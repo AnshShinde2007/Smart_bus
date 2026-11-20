@@ -18,3 +18,7 @@
   .nav-link .nav-icon{font-size:19px;width:20px}
   .nav-count{display:block}
 }
+.login-button{border:0;border-radius:7px;background:var(--green);color:#fff;padding:9px 13px;font:600 10px "DM Sans",sans-serif;cursor:pointer}
+.login-button:hover{background:var(--green-dark)}
+.login-button:focus-visible,.profile-sign-in:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.profile-sign-in{border:0;background:transparent;color:var(--green);font:600 10px "DM Sans",sans-serif;white-space:nowrap;cursor:pointer}

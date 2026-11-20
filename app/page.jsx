@@ -22,14 +22,14 @@ export default function HomePage() {
           </nav>
           <div className="sidebar-bottom">
             <div className="help-panel"><div className="help-icon">i</div><div><strong>Need a hand?</strong><span>We&apos;re here around the clock.</span></div><button aria-label="Contact support">↗</button></div>
-            <div className="profile"><div className="avatar">SB</div><div className="profile-copy"><strong>Signed out</strong><span>SmartBus account</span></div><button className="more-button" id="logout" aria-label="Sign out">↗</button></div>
+            <div className="profile"><div className="avatar">SB</div><div className="profile-copy"><strong>Signed out</strong><span>SmartBus account</span></div><button type="button" className="profile-sign-in" id="login-sidebar">Sign in</button><button type="button" className="more-button" id="logout" aria-label="Sign out">↗</button></div>
           </div>
         </aside>
 
         <main className="main-content">
           <header className="topbar">
             <div className="topbar-leading"><button type="button" id="menu-toggle" className="menu-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar"><span /><span /><span /></button><div className="breadcrumbs"><span>Workspace</span><span className="crumb-sep">/</span><strong id="crumb-current">Explore trips</strong></div></div>
-            <div className="topbar-actions"><span className="today-label" id="today-label" /><button className="icon-button notification-button" aria-label="Notifications"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12h4"/></svg><i /></button><div className="avatar avatar-small">AR</div></div>
+            <div className="topbar-actions"><span className="today-label" id="today-label" /><button type="button" className="login-button" id="login">Sign in</button><button className="icon-button notification-button" aria-label="Notifications"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12h4"/></svg><i /></button><div className="avatar avatar-small">AR</div></div>
           </header>
           <section id="app-view" aria-live="polite" />
           <footer className="app-footer"><span>SMARTBUS <span className="footer-dot">•</span> CITY TRANSIT, MADE SIMPLE</span><span>Demo environment <i className="demo-pulse" /></span></footer>

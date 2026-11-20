@@ -18,17 +18,22 @@ const patch=(path,body)=>api(path,{method:"PATCH",body:JSON.stringify(body)});
 function toast(message){const node=$("#toast");node.textContent=message;node.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove("show"),3200);}
 function setShellUser(){
   const copy=$(".profile-copy");const avatar=$(".profile .avatar");
-  if(!state.user){if(copy){copy.querySelector("strong").textContent="Signed out";copy.querySelector("span").textContent="SmartBus account";}if(avatar)avatar.textContent="SB";$(".avatar-small").textContent="";$("#logout").hidden=true;$$("[data-view]").forEach((button)=>{button.hidden=button.dataset.view!=="passenger";});return;}
+  if(!state.user){if(copy){copy.querySelector("strong").textContent="Signed out";copy.querySelector("span").textContent="SmartBus account";}if(avatar)avatar.textContent="SB";$(".avatar-small").textContent="";$("#login").hidden=false;$("#login-sidebar").hidden=false;$("#logout").hidden=true;$$("[data-view]").forEach((button)=>{button.hidden=button.dataset.view!=="passenger";});return;}
+  $("#login").hidden=true;$("#login-sidebar").hidden=true;
   $("#logout").hidden=false;
   if(copy){copy.querySelector("strong").textContent=state.user.name;copy.querySelector("span").textContent=state.user.role[0].toUpperCase()+state.user.role.slice(1);}
   if(avatar)avatar.textContent=state.user.name.split(/\s+/).map((part)=>part[0]).join("").slice(0,2).toUpperCase();
   $(".avatar-small").textContent=avatar?.textContent||"";
   $$("[data-view]").forEach((button)=>{const view=button.dataset.view;button.hidden=state.user.role==="passenger"?!["passenger","tickets"].includes(view):state.user.role==="driver"?view!=="driver":false;});
 }
-function authDialog(){
+function setAuthMode(register){
+  state.authRegister=register;$$('.register-field').forEach((field)=>{field.hidden=!register;const input=field.querySelector("input");if(input)input.required=register;});
+  $("#dialog-title").textContent=register?"Create a passenger account":"Sign in to continue";$("#auth-description").textContent=register?"Sign up to reserve a seat and manage your tickets.":"Sign in to open your SmartBus workspace.";$("#auth-submit").textContent=register?"Create account":"Sign in";$("#auth-switch").textContent=register?"Already have an account? Sign in":"Create a passenger account";$("#auth-password").autocomplete=register?"new-password":"current-password";
+}
+function authDialog(register=true){
   const dialog=$("#booking-dialog");dialog.className="booking-dialog auth-dialog";
-  dialog.innerHTML=`<div class="dialog-head"><div><span class="eyebrow">SmartBus</span><h2 id="dialog-title">Create a passenger account</h2><p>Sign up to reserve a seat and manage your tickets.</p></div></div><div class="dialog-body"><form id="auth-form" class="form-grid"><div class="field register-field"><label for="auth-name">Name</label><input id="auth-name" name="name" required maxlength="80" autocomplete="name"></div><div class="field register-field"><label for="auth-phone">Phone</label><input id="auth-phone" name="phone" maxlength="24" autocomplete="tel"></div><div class="field"><label for="auth-email">Email</label><input id="auth-email" name="email" type="email" required maxlength="254" autocomplete="email"></div><div class="field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></div><p class="form-error" id="auth-error"></p><button class="primary-button" id="auth-submit">Create account</button><button class="text-button" id="auth-switch" type="button">Already have an account? Sign in</button></form></div>`;
-  state.authRegister=true;dialog.oncancel=null;dialog.showModal();
+  dialog.innerHTML=`<div class="dialog-head"><div><span class="eyebrow">SmartBus</span><h2 id="dialog-title">Create a passenger account</h2><p id="auth-description">Sign up to reserve a seat and manage your tickets.</p></div></div><div class="dialog-body"><form id="auth-form" class="form-grid"><div class="field register-field"><label for="auth-name">Name</label><input id="auth-name" name="name" required maxlength="80" autocomplete="name"></div><div class="field register-field"><label for="auth-phone">Phone</label><input id="auth-phone" name="phone" maxlength="24" autocomplete="tel"></div><div class="field"><label for="auth-email">Email</label><input id="auth-email" name="email" type="email" required maxlength="254" autocomplete="email"></div><div class="field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></div><p class="form-error" id="auth-error"></p><button class="primary-button" id="auth-submit">Create account</button><button class="text-button" id="auth-switch" type="button">Already have an account? Sign in</button></form></div>`;
+  setAuthMode(register);dialog.oncancel=null;dialog.showModal();
 }
 function showTrip(trip){return {id:trip.id,operator:trip.bus_name,initials:(trip.bus_name||"SB").split(/\s+/).map((part)=>part[0]).join("").slice(0,2).toUpperCase(),vehicle:trip.bus_type,bus:trip.bus,from:trip.source,to:trip.destination,depart:trip.departure_time,arrive:trip.arrival_time,duration:"—",fare:trip.fare,remainingSeats:trip.remainingSeats,journeyDate:trip.journey_date,status:trip.status,stops:trip.stops||[],location:trip.location||null};}
 function routeOptions(){return state.routes.map((route)=>route.source);}
@@ -189,9 +194,10 @@ async function exportBookings(){
 }
 
 document.addEventListener("click",async(event)=>{
+  if(event.target.closest("#login, #login-sidebar")){authDialog(false);return;}
   if(event.target.closest("#logout")){if(state.driverWatch!==null)navigator.geolocation.clearWatch(state.driverWatch);state.driverWatch=null;closeStream();await post("/api/auth/logout",{}).catch(()=>{});state.user=null;state.view="passenger";$$('[data-view]').forEach((button)=>button.hidden=true);await render();return;}
   const view=event.target.closest("[data-view]");if(view){setView(view.dataset.view);return;}
-  if(event.target.closest("#auth-switch")){state.authRegister=!state.authRegister;$$('.register-field').forEach((field)=>{field.hidden=!state.authRegister;const input=field.querySelector("input");if(input)input.required=state.authRegister;});$("#dialog-title").textContent=state.authRegister?"Create a passenger account":"Sign in to continue";$("#auth-submit").textContent=state.authRegister?"Create account":"Sign in";$("#auth-switch").textContent=state.authRegister?"Already have an account? Sign in":"Create a passenger account";$("#auth-password").autocomplete=state.authRegister?"new-password":"current-password";return;}
+  if(event.target.closest("#auth-switch")){setAuthMode(!state.authRegister);return;}
   const book=event.target.closest("[data-book]");if(book){try{await showBooking(book.dataset.book);}catch(error){toast(error.message);}return;}
   const seat=event.target.closest("[data-seat]");if(seat){const number=seat.dataset.seat;state.selectedSeats=state.selectedSeats.includes(number)?state.selectedSeats.filter((s)=>s!==number):[...state.selectedSeats,number];seat.classList.toggle("selected",state.selectedSeats.includes(number));updateSeatSummary();return;}
   if(event.target.closest("#confirm-booking")){checkout();return;}
