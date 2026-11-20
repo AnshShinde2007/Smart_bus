@@ -197,7 +197,7 @@ document.addEventListener("click",async(event)=>{
   if(event.target.closest("#login, #login-sidebar")){authDialog(false);return;}
   if(event.target.closest("#logout")){if(state.driverWatch!==null)navigator.geolocation.clearWatch(state.driverWatch);state.driverWatch=null;closeStream();await post("/api/auth/logout",{}).catch(()=>{});state.user=null;state.view="passenger";$$('[data-view]').forEach((button)=>button.hidden=true);await render();return;}
   const view=event.target.closest("[data-view]");if(view){setView(view.dataset.view);return;}
-  const authRole=event.target.closest("[data-auth-role]");if(authRole){state.authRole=authRole.dataset.authRole;setAuthMode(false);return;}
+  const authRole=event.target.closest("[data-auth-role]");if(authRole){try{const {user}=await post("/api/auth/demo-login",{role:authRole.dataset.authRole});state.user=user;state.view=user.role==="admin"?"admin":user.role==="driver"?"driver":"passenger";$("#booking-dialog").close();await render();}catch(error){toast(error.message);}return;}
   if(event.target.closest("#auth-switch")){setAuthMode(!state.authRegister);return;}
   const book=event.target.closest("[data-book]");if(book){try{await showBooking(book.dataset.book);}catch(error){toast(error.message);}return;}
   const seat=event.target.closest("[data-seat]");if(seat){const number=seat.dataset.seat;state.selectedSeats=state.selectedSeats.includes(number)?state.selectedSeats.filter((s)=>s!==number):[...state.selectedSeats,number];seat.classList.toggle("selected",state.selectedSeats.includes(number));updateSeatSummary();return;}
