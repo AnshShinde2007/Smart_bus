@@ -4,12 +4,12 @@ import { json } from "../../../../lib/http.js";
 
 export const dynamic="force-dynamic";
 export async function GET(request,{params}){
-  const auth=requireUser(request);if(auth.error)return json({error:auth.error},auth.status);
+  const auth=await requireUser(request);if(auth.error)return json({error:auth.error},auth.status);
   const {bookingId}=await params;
-  const row=db.prepare("SELECT b.*,t.journey_date,t.departure_time,t.arrival_time,r.source,r.destination,bu.registration_number AS bus FROM bookings b JOIN trips t ON t.id=b.trip_id JOIN routes r ON r.id=t.route_id JOIN buses bu ON bu.id=t.bus_id WHERE b.id=?").get(bookingId);
+  const row=(await db.get("SELECT b.*,t.journey_date,t.departure_time,t.arrival_time,r.source,r.destination,bu.registration_number AS bus FROM bookings b JOIN trips t ON t.id=b.trip_id JOIN routes r ON r.id=t.route_id JOIN buses bu ON bu.id=t.bus_id WHERE b.id=?", [bookingId]));
   if(!row||row.user_id!==auth.user.id&&auth.user.role!=="admin")return json({error:"Booking not found."},404);
-  const seats=db.prepare("SELECT seat_number FROM booking_seats WHERE booking_id=? ORDER BY seat_number").all(bookingId).map((item)=>item.seat_number);
-  const payment=db.prepare("SELECT status FROM payments WHERE booking_id=?").get(bookingId);
+  const seats=(await db.all("SELECT seat_number FROM booking_seats WHERE booking_id=? ORDER BY seat_number", [bookingId])).map((item)=>item.seat_number);
+  const payment=(await db.get("SELECT status FROM payments WHERE booking_id=?", [bookingId]));
   const {hold_token,...safeBooking}=row;
   return json({booking:{...safeBooking,seats,paymentStatus:payment?.status||"pending"}});
 }

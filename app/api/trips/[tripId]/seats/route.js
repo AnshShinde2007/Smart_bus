@@ -4,6 +4,6 @@ import { seatsForTrip } from "../../../../../lib/trips.js";
 
 export const dynamic = "force-dynamic";
 export async function GET(request,{params}) {
-  const {tripId}=await params; const seats=seatsForTrip(tripId,getSessionUser(request)?.id); if(!seats) return json({error:"Trip not found."},404);
+  const {tripId}=await params; const user=await getSessionUser(request);const seats=await seatsForTrip(tripId,user?.id); if(!seats) return json({error:"Trip not found."},404);
   return json({seats,holdMinutes:10});
 }

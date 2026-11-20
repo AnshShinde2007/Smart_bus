@@ -19,8 +19,8 @@ Bookings use a server-side dummy payment flow. Checkout asks before simulating a
 
 ## Production setup
 
-Copy `.env.example` to `.env.local`. Set a persistent `SMARTBUS_DB_PATH` and provision the initial administrator with `SMARTBUS_ADMIN_EMAIL` and a random `SMARTBUS_ADMIN_PASSWORD` of at least 16 characters. Payments remain simulated; do not use this dummy gateway to collect real money.
+Copy `.env.example` to `.env.local`. Local development uses SQLite. For Vercel, set `SUPABASE_DB_URL` to the Supabase Postgres connection string and provision the initial administrator with `SMARTBUS_ADMIN_EMAIL` and a random `SMARTBUS_ADMIN_PASSWORD` of at least 16 characters. The application creates its tables on first use. Payments remain simulated; do not use this dummy gateway to collect real money.
 
-The application uses SQLite with write-ahead logging and transactional seat holds. Keep the database on a persistent disk and run a single application instance for this MVP. For multiple app instances or higher booking volume, move to PostgreSQL and use shared realtime infrastructure before deployment.
+Production uses Supabase Postgres with transactional seat holds. Use the Supabase transaction-pooler connection string for Vercel and store it as the private `SUPABASE_DB_URL` environment variable. Keep the publishable API key public; never put a database password in client code. Existing local SQLite data is not copied automatically.
 
 The map defaults to OpenStreetMap tiles with visible attribution. Its community tile service is best-effort and has usage limits; configure a suitable tile provider for commercial/high-volume use. Location history is pruned to 30 days, and passenger endpoints suppress GPS fixes older than two minutes.
