@@ -22,3 +22,8 @@
 .login-button:hover{background:var(--green-dark)}
 .login-button:focus-visible,.profile-sign-in:focus-visible{outline:2px solid var(--green);outline-offset:3px}
 .profile-sign-in{border:0;background:transparent;color:var(--green);font:600 10px "DM Sans",sans-serif;white-space:nowrap;cursor:pointer}
+.auth-roles{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.auth-roles[hidden]{display:none}
+.auth-roles button{border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted);padding:9px 6px;font:600 9px "DM Sans",sans-serif;cursor:pointer}
+.auth-roles button[aria-pressed="true"]{border-color:var(--green);background:var(--pale);color:var(--green-dark)}
+.auth-roles button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
