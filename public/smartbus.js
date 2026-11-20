@@ -18,6 +18,8 @@ const patch=(path,body)=>api(path,{method:"PATCH",body:JSON.stringify(body)});
 function toast(message){const node=$("#toast");node.textContent=message;node.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove("show"),3200);}
 function setShellUser(){
   const copy=$(".profile-copy");const avatar=$(".profile .avatar");
+  if(!state.user){if(copy){copy.querySelector("strong").textContent="Signed out";copy.querySelector("span").textContent="SmartBus account";}if(avatar)avatar.textContent="SB";$(".avatar-small").textContent="";$("#logout").hidden=true;$$("[data-view]").forEach((button)=>{button.hidden=button.dataset.view!=="passenger";});return;}
+  $("#logout").hidden=false;
   if(copy){copy.querySelector("strong").textContent=state.user.name;copy.querySelector("span").textContent=state.user.role[0].toUpperCase()+state.user.role.slice(1);}
   if(avatar)avatar.textContent=state.user.name.split(/\s+/).map((part)=>part[0]).join("").slice(0,2).toUpperCase();
   $(".avatar-small").textContent=avatar?.textContent||"";
@@ -25,10 +27,9 @@ function setShellUser(){
 }
 function authDialog(){
   const dialog=$("#booking-dialog");dialog.className="booking-dialog auth-dialog";
-  dialog.innerHTML=`<div class="dialog-head"><div><span class="eyebrow">SmartBus workspace</span><h2 id="dialog-title">Sign in to continue</h2><p>Access your trips, tickets, and service tools.</p></div></div><div class="dialog-body"><form id="auth-form" class="form-grid"><div class="field register-field" hidden><label for="auth-name">Name</label><input id="auth-name" name="name" maxlength="80" autocomplete="name"></div><div class="field register-field" hidden><label for="auth-phone">Phone</label><input id="auth-phone" name="phone" maxlength="24" autocomplete="tel"></div><div class="field"><label for="auth-email">Email</label><input id="auth-email" name="email" type="email" required maxlength="254" autocomplete="username"></div><div class="field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password"></div><p class="form-error" id="auth-error"></p><button class="primary-button" id="auth-submit">Sign in</button><button class="text-button" id="auth-switch" type="button">Create a passenger account</button></form><div class="demo-accounts" id="demo-accounts"></div></div>`;
-  state.authRegister=false;dialog.oncancel=(event)=>{if(!state.user)event.preventDefault();};dialog.showModal();loadDemoInfo();
+  dialog.innerHTML=`<div class="dialog-head"><div><span class="eyebrow">SmartBus</span><h2 id="dialog-title">Create a passenger account</h2><p>Sign up to reserve a seat and manage your tickets.</p></div></div><div class="dialog-body"><form id="auth-form" class="form-grid"><div class="field register-field"><label for="auth-name">Name</label><input id="auth-name" name="name" required maxlength="80" autocomplete="name"></div><div class="field register-field"><label for="auth-phone">Phone</label><input id="auth-phone" name="phone" maxlength="24" autocomplete="tel"></div><div class="field"><label for="auth-email">Email</label><input id="auth-email" name="email" type="email" required maxlength="254" autocomplete="email"></div><div class="field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></div><p class="form-error" id="auth-error"></p><button class="primary-button" id="auth-submit">Create account</button><button class="text-button" id="auth-switch" type="button">Already have an account? Sign in</button></form></div>`;
+  state.authRegister=true;dialog.oncancel=null;dialog.showModal();
 }
-async function loadDemoInfo(){try{const {accounts}=await api("/api/auth/demo-info");if(accounts?.length)$("#demo-accounts").innerHTML=`<div class="demo-hint">Local demo accounts · passwords shown by the development server</div>${accounts.map((a)=>`<button type="button" class="demo-login" data-demo-email="${safe(a.email)}" data-demo-password="${safe(a.password)}">${safe(a.role)} <span>${safe(a.email)}</span></button>`).join("")}`;}catch{}}
 function showTrip(trip){return {id:trip.id,operator:trip.bus_name,initials:(trip.bus_name||"SB").split(/\s+/).map((part)=>part[0]).join("").slice(0,2).toUpperCase(),vehicle:trip.bus_type,bus:trip.bus,from:trip.source,to:trip.destination,depart:trip.departure_time,arrive:trip.arrival_time,duration:"—",fare:trip.fare,remainingSeats:trip.remainingSeats,journeyDate:trip.journey_date,status:trip.status,stops:trip.stops||[],location:trip.location||null};}
 function routeOptions(){return state.routes.map((route)=>route.source);}
 function destinationOptions(){return [...new Set(state.routes.filter((item)=>item.source===state.source).map((route)=>route.destination))];}
@@ -112,13 +113,14 @@ async function render(){
   }catch(error){$("#app-view").innerHTML=`<div class="page"><div class="no-results"><strong>Couldn’t load this view</strong>${safe(error.message)}<p><button class="quiet-button" id="retry-view">Try again</button></p></div></div>`;}
 }
 function setView(view){
-  if(!state.user){toast("Sign in to continue.");authDialog();return;}
+  if(!state.user){if(view==="passenger")return;toast("Create an account to continue.");authDialog();return;}
   const allowed=state.user.role==="admin"||state.user.role==="driver"&&view==="driver"||state.user.role==="passenger"&&["passenger","tickets"].includes(view);
   if(!allowed){toast("That area isn’t available for your account.");return;}
   state.view=view;$$(".nav-link").forEach((button)=>button.classList.toggle("active",button.dataset.view===view));
   const names={passenger:"Explore trips",tickets:"My tickets",driver:"Driver panel",admin:"Operator desk"};$("#crumb-current").textContent=names[view];render();
 }
 async function showBooking(tripId){
+  if(!state.user){authDialog();return;}
   const trip=state.trips.find((item)=>item.id===tripId)||showTrip((await api(`/api/trips/${encodeURIComponent(tripId)}`)).trip);
   state.selectedTrip=trip;state.selectedSeats=[];state.hold=null;
   const {seats}=await api(`/api/trips/${encodeURIComponent(tripId)}/seats`);
@@ -187,10 +189,9 @@ async function exportBookings(){
 }
 
 document.addEventListener("click",async(event)=>{
-  if(event.target.closest("#logout")){if(state.driverWatch!==null)navigator.geolocation.clearWatch(state.driverWatch);state.driverWatch=null;closeStream();await post("/api/auth/logout",{}).catch(()=>{});state.user=null;$$('[data-view]').forEach((button)=>button.hidden=true);authDialog();return;}
+  if(event.target.closest("#logout")){if(state.driverWatch!==null)navigator.geolocation.clearWatch(state.driverWatch);state.driverWatch=null;closeStream();await post("/api/auth/logout",{}).catch(()=>{});state.user=null;state.view="passenger";$$('[data-view]').forEach((button)=>button.hidden=true);await render();return;}
   const view=event.target.closest("[data-view]");if(view){setView(view.dataset.view);return;}
-  const demo=event.target.closest("[data-demo-email]");if(demo){$("#auth-email").value=demo.dataset.demoEmail;$("#auth-password").value=demo.dataset.demoPassword;return;}
-  if(event.target.closest("#auth-switch")){state.authRegister=!state.authRegister;$$('.register-field').forEach((field)=>{field.hidden=!state.authRegister;const input=field.querySelector("input");if(input)input.required=state.authRegister;});$("#dialog-title").textContent=state.authRegister?"Create a passenger account":"Sign in to continue";$("#auth-submit").textContent=state.authRegister?"Create account":"Sign in";$("#auth-switch").textContent=state.authRegister?"Back to sign in":"Create a passenger account";$("#auth-password").autocomplete=state.authRegister?"new-password":"current-password";return;}
+  if(event.target.closest("#auth-switch")){state.authRegister=!state.authRegister;$$('.register-field').forEach((field)=>{field.hidden=!state.authRegister;const input=field.querySelector("input");if(input)input.required=state.authRegister;});$("#dialog-title").textContent=state.authRegister?"Create a passenger account":"Sign in to continue";$("#auth-submit").textContent=state.authRegister?"Create account":"Sign in";$("#auth-switch").textContent=state.authRegister?"Already have an account? Sign in":"Create a passenger account";$("#auth-password").autocomplete=state.authRegister?"new-password":"current-password";return;}
   const book=event.target.closest("[data-book]");if(book){try{await showBooking(book.dataset.book);}catch(error){toast(error.message);}return;}
   const seat=event.target.closest("[data-seat]");if(seat){const number=seat.dataset.seat;state.selectedSeats=state.selectedSeats.includes(number)?state.selectedSeats.filter((s)=>s!==number):[...state.selectedSeats,number];seat.classList.toggle("selected",state.selectedSeats.includes(number));updateSeatSummary();return;}
   if(event.target.closest("#confirm-booking")){checkout();return;}
@@ -227,7 +228,7 @@ window.addEventListener("storage",()=>{});
 async function boot(){
   $("#today-label").textContent=new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
   try{state.user=(await api("/api/auth/me")).user;}catch{state.user=null;}
-  if(!state.user){$$('[data-view]').forEach((button)=>button.hidden=true);authDialog();return;}
+  if(!state.user){state.view="passenger";$("#crumb-current").textContent="Explore trips";await render();return;}
   setShellUser();state.view=state.user.role==="admin"?"admin":state.user.role==="driver"?"driver":"passenger";
   const names={passenger:"Explore trips",driver:"Driver panel",admin:"Operator desk"};$("#crumb-current").textContent=names[state.user.role];await render();
 }

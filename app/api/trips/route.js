@@ -1,4 +1,3 @@
-import { getSessionUser } from "../../../lib/auth.js";
 import db from "../../../lib/db.js";
 import { json } from "../../../lib/http.js";
 import { listTrips } from "../../../lib/trips.js";
@@ -6,7 +5,6 @@ import { isDateOnly } from "../../../lib/dates.js";
 
 export const dynamic = "force-dynamic";
 export function GET(request) {
-  if (!getSessionUser(request)) return json({error:"Sign in to search trips."},401);
   const params=new URL(request.url).searchParams; const from=(params.get("from")||"").trim(); const to=(params.get("to")||"").trim(); const date=params.get("date")||"";
   if(from.length>80||to.length>80||date&&!isDateOnly(date)) return json({error:"Enter a valid route and journey date."},400);
   const trips=listTrips({from,to,date}).map((trip)=>{

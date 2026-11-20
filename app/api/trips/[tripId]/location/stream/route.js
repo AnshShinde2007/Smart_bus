@@ -1,11 +1,9 @@
 import db from "../../../../../../lib/db.js";
-import { requireUser } from "../../../../../../lib/auth.js";
 import { json } from "../../../../../../lib/http.js";
 
 export const dynamic="force-dynamic";
 export const runtime="nodejs";
 export async function GET(request,{params}) {
-  const auth=requireUser(request,["passenger","admin"]); if(auth.error) return json({error:auth.error},auth.status);
   const {tripId}=await params;
   if(!db.prepare("SELECT 1 FROM trips WHERE id=?").get(tripId)) return json({error:"Trip not found."},404);
   const encoder=new TextEncoder(); let timer;

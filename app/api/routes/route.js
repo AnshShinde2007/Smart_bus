@@ -1,10 +1,9 @@
 import db from "../../../lib/db.js";
-import { getSessionUser,requireUser } from "../../../lib/auth.js";
+import { requireUser } from "../../../lib/auth.js";
 import { json,readJson,sameOrigin,safeError } from "../../../lib/http.js";
 
 export const dynamic="force-dynamic";
 export function GET(request){
-  if(!getSessionUser(request))return json({error:"Sign in to continue."},401);
   const routes=db.prepare("SELECT r.id,r.route_name,r.source,r.destination,COUNT(s.id) AS stop_count FROM routes r LEFT JOIN stops s ON s.route_id=r.id GROUP BY r.id ORDER BY r.source,r.destination").all();
   const stops=db.prepare("SELECT stop_name,latitude,longitude,stop_order FROM stops WHERE route_id=? ORDER BY stop_order");
   return json({routes:routes.map((route)=>({...route,stops:stops.all(route.id)}))});
