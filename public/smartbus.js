@@ -159,7 +159,7 @@ function startGps(tripId){
   let lastPost=0;
   state.driverWatch=navigator.geolocation.watchPosition(async(position)=>{
     const now=Date.now();if(now-lastPost<5000)return;lastPost=now;
-    try{await post(`/api/driver/trips/${encodeURIComponent(tripId)}/location`,{latitude:position.coords.latitude,longitude:position.coords.longitude,accuracy:position.coords.accuracy});const node=$("#gps-status");if(node)node.textContent=`GPS updated ${new Date().toLocaleTimeString()} · ±${Math.round(position.coords.accuracy)} m`;}catch(error){toast(error.message);}
+    try{const {latitude,longitude,accuracy}=position.coords;const recordedAt=new Date().toISOString();await post(`/api/driver/trips/${encodeURIComponent(tripId)}/location`,{latitude,longitude,accuracy});state.liveLocation={latitude,longitude,accuracy,recorded_at:recordedAt};if(state.map&&window.L){if(state.busMarker)state.busMarker.setLatLng([latitude,longitude]);else state.busMarker=window.L.circleMarker([latitude,longitude],{radius:9,color:"#fff",weight:3,fillColor:"#e2a550",fillOpacity:1}).addTo(state.map);state.map.panTo([latitude,longitude]);}const node=$("#gps-status");if(node)node.textContent=`GPS updated ${new Date().toLocaleTimeString()} · ±${Math.round(accuracy)} m`;}catch(error){toast(error.message);}
   },(error)=>{const messages={1:"GPS permission denied. Enable location access to share your trip.",2:"GPS is unavailable. Move to a place with a clearer signal.",3:"GPS timed out. The trip remains active, but no location was sent."};toast(messages[error.code]||"Could not read GPS.");const node=$("#gps-status");if(node)node.textContent="No fresh GPS fix. Trip remains active.";},{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
 }
 function addForm(kind,item){
